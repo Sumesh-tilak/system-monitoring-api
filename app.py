@@ -7,14 +7,12 @@ from datetime import datetime
 app = Flask(__name__)
 start_time = time.time()
 
-
 @app.route('/')
 def home():
     return jsonify({
         "message": "System Monitoring API is Running",
         "status": "healthy"
     })
-
 
 @app.route('/health')
 def health():
@@ -38,12 +36,8 @@ def health():
             },
             "timestamp": datetime.utcnow().isoformat()
         })
-
     except Exception as e:
-        return jsonify({
-            "error": str(e)
-        }), 500
-
+        return jsonify({"error": str(e)}), 500
 
 @app.route('/system')
 def system_info():
@@ -58,7 +52,6 @@ def system_info():
         "system_load": psutil.getloadavg() if hasattr(psutil, "getloadavg") else "N/A"
     })
 
-
 @app.route('/network')
 def network():
     net = psutil.net_io_counters()
@@ -70,18 +63,7 @@ def network():
         "packets_received": net.packets_recv
     })
 
-@app.get("/health")
-def health():
-        return {"status":"ok"}
-
-logging.basicConfig(level=logging.INFO)
-
-@app.get("/")
-def home():
-    logging.info("Home endpoint hit")
-    return {"message":"Hello World"}
-
-@app.ger("/crash")
+@app.get("/crash")
 def crash():
     1/0
 
