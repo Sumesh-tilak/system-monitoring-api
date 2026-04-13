@@ -4,6 +4,9 @@ on:
   push:
     branches: ["main"]
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true # ✅ opt-in to Node 24 now
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -17,16 +20,16 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4
 
-      # ⚡ Cache Docker layers for faster builds
+      # ⚡ Cache Docker layers (UPDATED)
       - name: Cache Docker layers
-        uses: actions/cache@v4
+        uses: actions/cache@v5 # ⬅️ FIXED
         with:
           path: /tmp/.buildx-cache
           key: ${{ runner.os }}-buildx-${{ github.sha }}
           restore-keys: |
             ${{ runner.os }}-buildx-
 
-      # 🔨 Build Docker image using Buildx
+      # 🔨 Build Docker image
       - name: Build Docker image
         run: |
           docker buildx build \
@@ -36,21 +39,21 @@ jobs:
             --load \
             .
 
-      # 🔄 Move cache (avoids cache corruption)
+      # 🔄 Move cache safely
       - name: Move cache
         run: |
           rm -rf /tmp/.buildx-cache
           mv /tmp/.buildx-cache-new /tmp/.buildx-cache
 
-      # 🧪 Run container + health check with retry
+      # 🧪 Run container + health check
       - name: Run container test
         run: |
           docker run -d -p 5000:5000 --name test-container system-monitor
 
-          echo "Waiting for service to be ready..."
+          echo "Waiting for service..."
           for i in {1..10}; do
             if curl -f http://localhost:5000/health; then
-              echo "✅ Service is healthy"
+              echo "✅ Healthy"
               docker stop test-container
               docker rm test-container
               exit 0
@@ -58,7 +61,7 @@ jobs:
             sleep 2
           done
 
-          echo "❌ Service failed health check"
+          echo "❌ Health check failed"
           docker logs test-container
           docker stop test-container
           docker rm test-container
