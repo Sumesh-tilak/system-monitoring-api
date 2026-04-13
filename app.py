@@ -74,7 +74,7 @@ def network():
 def health():
         return {"status":"ok"}
 
-logging basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.INFO)
 
 @app.get("/")
 def home():
