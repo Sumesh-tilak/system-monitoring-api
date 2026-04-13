@@ -78,7 +78,7 @@ logging.basicConfig(level=logging.INFO)
 
 @app.get("/")
 def home():
-    logging info("Home endpoint hit")
+    logging.info("Home endpoint hit")
     return {"message":"Hello World"}
 
 @app.ger("/crash")
