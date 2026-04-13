@@ -1,6 +1,7 @@
 from flask import Flask, jsonify
 import psutil
 import time
+import logging
 from datetime import datetime
 
 app = Flask(__name__)
@@ -69,6 +70,20 @@ def network():
         "packets_received": net.packets_recv
     })
 
+@app.get("/health")
+def health():
+        return {"status":"ok"}
+
+logging basicConfig(level=logging.INFO)
+
+@app.get("/")
+def home():
+    logging info("Home endpoint hit")
+    return {"message":"Hello World"}
+
+@app.ger("/crash")
+def crash():
+    1/0
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
