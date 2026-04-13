@@ -9,17 +9,57 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # 📥 Checkout repository
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
-      - name: Set up Docker
-        uses: docker/setup-buildx-action@v3
+      # 🐳 Set up Docker Buildx
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
 
+      # ⚡ Cache Docker layers for faster builds
+      - name: Cache Docker layers
+        uses: actions/cache@v4
+        with:
+          path: /tmp/.buildx-cache
+          key: ${{ runner.os }}-buildx-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-buildx-
+
+      # 🔨 Build Docker image using Buildx
       - name: Build Docker image
-        run: docker build -t system-monitor .
+        run: |
+          docker buildx build \
+            --cache-from type=local,src=/tmp/.buildx-cache \
+            --cache-to type=local,dest=/tmp/.buildx-cache-new \
+            -t system-monitor \
+            --load \
+            .
 
+      # 🔄 Move cache (avoids cache corruption)
+      - name: Move cache
+        run: |
+          rm -rf /tmp/.buildx-cache
+          mv /tmp/.buildx-cache-new /tmp/.buildx-cache
+
+      # 🧪 Run container + health check with retry
       - name: Run container test
         run: |
-          docker run -d -p 5000:5000 system-monitor
-          sleep 5
-          curl http://localhost:5000/health
+          docker run -d -p 5000:5000 --name test-container system-monitor
+
+          echo "Waiting for service to be ready..."
+          for i in {1..10}; do
+            if curl -f http://localhost:5000/health; then
+              echo "✅ Service is healthy"
+              docker stop test-container
+              docker rm test-container
+              exit 0
+            fi
+            sleep 2
+          done
+
+          echo "❌ Service failed health check"
+          docker logs test-container
+          docker stop test-container
+          docker rm test-container
+          exit 1
